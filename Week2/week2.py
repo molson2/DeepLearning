@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 
+# http://www.columbia.edu/~ahd2125/post/2015/12/5/
 
 # ------------------------------------------------------------------------------
 #                             Getting Started
@@ -36,7 +37,6 @@ with tf.Session() as sess:
     init.run()
     y_even = sess.run(y, feed_dict={x: x_data[::2, :]})
     y_all = sess.run(y, feed_dict={x: x_data})
-
 
 # ------------------------------------------------------------------------------
 #                        Regression 1 (Normal Equations)
@@ -91,7 +91,7 @@ with tf.Session() as sess:
 
 # use tensorflow to minimize function
 n_iter = 50
-optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.05)
+optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.5)
 training_op = optimizer.minimize(f(x))
 
 
@@ -165,7 +165,7 @@ a, b, c = np.linalg.svd(img)
 # sparse PCA
 n, m = img.shape
 n_comps = 10
-gamma = 20
+gamma = 5
 
 tf.reset_default_graph()
 tf.set_random_seed(1234)

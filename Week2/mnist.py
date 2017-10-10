@@ -44,7 +44,7 @@ xentropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
 loss = tf.reduce_mean(xentropy, name='loss')
 
 # set the optimizer (note, fancier than just plain gradient descent!)
-optimizer = tf.train.AdamOptimizer(0.01)
+optimizer = tf.train.GradientDescentOptimizer(0.01)
 training_op = optimizer.minimize(loss)
 
 # create variable to keep track of losses
