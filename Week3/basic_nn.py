@@ -1,4 +1,6 @@
-# show example of softmax / multilayer for spiral example
+# ------------------------------------------------------------------------------
+#                               NN from scratch
+# ------------------------------------------------------------------------------
 
 import numpy as np
 import os
@@ -9,8 +11,7 @@ import matplotlib.pyplot as plt
 
 class DNN(object):
 
-    def __init__(self, layer_sizes, activation, activation_prime, lamda,
-                 he_init=True):
+    def __init__(self, layer_sizes, activation, activation_prime, he_init=True):
         '''
         @param layer_sizes [n_input hidden_1 ... hidden_k output]
         '''
@@ -18,7 +19,6 @@ class DNN(object):
         self.hidden_layers = layer_sizes[1:-1]
         self.n_inputs = layer_sizes[0]
         self.n_outputs = layer_sizes[-1]
-        self.lamda = lamda
         self.activation = activation
         self.activation_prime = activation_prime
 
@@ -32,7 +32,7 @@ class DNN(object):
                     np.random.randn(i_out, i_in) / np.sqrt(2 * i_in)
                 )
             else:
-                self.weights.append(0.01 * np.random.randn(i_out, i_in))
+                self.weights.append(np.random.randn(i_out, i_in))
 
     def predict(self, X, return_probs=False):
         assert X.shape[0] == self.n_inputs, 'Check that X has right shape'
@@ -77,7 +77,7 @@ class DNN(object):
 
         ## backward pass (delta = dL / dz) ##
 
-        # start with the last layer
+        # start with the last layer: L = cross entropy; dL/d0_k = p_k - I(y=k)
         delta = probs
         delta[np.argmax(y, axis=0), range(n_examples)] -= 1
         delta /= n_examples
@@ -95,15 +95,16 @@ class DNN(object):
 
         return dw, db
 
-    def train(self, X, y, X_test, y_test, learning_rate=0.1, n_epochs=100,
+    def train(self, X, y, X_test, y_test, eta=0.1, lamda=0.1, n_epochs=100,
               batch_size=64):
         for epoch in range(n_epochs):
             mini_batches = self.minibatch_indices(X.shape[1], batch_size)
             for batch in mini_batches:
                 dw, db = self.compute_loss_gradient(X[:, batch], y[:, batch])
                 for i in xrange(len(self.weights)):
-                    self.weights[i] += -learning_rate * dw[i]
-                    self.biases[i] += -learning_rate * db[i]
+                    reg_term = self.weights[i] / len(batch)
+                    self.weights[i] += -eta * (dw[i] + lamda * reg_term)
+                    self.biases[i] += -eta * db[i]
             if epoch % 5 == 0:
                 train_acc = self.accuracy(self.predict(X), y)
                 test_acc = self.accuracy(self.predict(X_test), y_test)
@@ -145,13 +146,6 @@ class DNN(object):
 ''
 
 # ------------------------------------------------------------------------------
-#                               Todo
-# ------------------------------------------------------------------------------
-
-# make sure that when selecting rows in minibatch, don't get a 1d array
-# add in regularization somewhere ... plus make sure it is scaled correctly
-
-# ------------------------------------------------------------------------------
 #                               Spiral Example
 # ------------------------------------------------------------------------------
 
@@ -172,6 +166,7 @@ def spiral_data(N, K):
 
 N, K = 100, 3
 X, y = spiral_data(N, K)
+
 plt.scatter(X[0, :], X[1, :], c=y.argmax(axis=0), s=40, cmap=plt.cm.Spectral)
 plt.show()
 
@@ -180,8 +175,8 @@ X_test = np.c_[x1.reshape(-1), x2.reshape(-1)].T
 
 ## softmax classifier ##
 
-softmax = DNN([2, 3], None, None, 0, False)
-softmax.train(X, y, X, y)
+softmax = DNN([2, 3], None, None, False)
+softmax.train(X, y, X, y, lamda=0)
 yhat = softmax.predict(X_test).argmax(axis=0)
 
 plt.contourf(x1, x2, yhat.reshape((80, 80)), cmap=plt.cm.Spectral, alpha=0.8)
@@ -200,8 +195,14 @@ def relu_prime(x):
     z[x > 0] = 1
     return z
 
-nn = DNN([2, 10, 10, 10, 3], relu, relu_prime, 0, True)
-nn.train(X, y, X, y, n_epochs=1000)
+# bad initialization
+nn = DNN([2, 50, 50, 50, 50, 3], relu, relu_prime, False)
+nn.train(X, y, X, y, n_epochs=200)
+yhat = nn.predict(X_test).argmax(axis=0)
+
+# good initialization
+nn = DNN([2, 50, 50, 50, 50, 3], relu, relu_prime, True)
+nn.train(X, y, X, y, n_epochs=200)
 yhat = nn.predict(X_test).argmax(axis=0)
 
 plt.contourf(x1, x2, yhat.reshape((80, 80)), cmap=plt.cm.Spectral, alpha=0.8)
