@@ -2,18 +2,17 @@
 #                               NN from scratch
 # ------------------------------------------------------------------------------
 
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pickle
 import pdb
-import matplotlib.pyplot as plt
 
 
 class DNN(object):
 
     def __init__(self, layer_sizes, activation, activation_prime, he_init=True):
         '''
-        @param layer_sizes [n_input hidden_1 ... hidden_k output]
         '''
         self.n_layers = len(layer_sizes)
         self.hidden_layers = layer_sizes[1:-1]
@@ -201,8 +200,8 @@ nn.train(X, y, X, y, n_epochs=200)
 yhat = nn.predict(X_test).argmax(axis=0)
 
 # good initialization
-nn = DNN([2, 50, 50, 50, 50, 3], relu, relu_prime, True)
-nn.train(X, y, X, y, n_epochs=200)
+nn = DNN([2, 2, 3], relu, relu_prime, True)
+nn.train(X, y, X, y, n_epochs=5000)
 yhat = nn.predict(X_test).argmax(axis=0)
 
 plt.contourf(x1, x2, yhat.reshape((80, 80)), cmap=plt.cm.Spectral, alpha=0.8)

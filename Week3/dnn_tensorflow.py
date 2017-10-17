@@ -54,6 +54,7 @@ def accuracy(yhat, y):
 #                    Build one layer network (low level)
 # ------------------------------------------------------------------------------
 
+
 reset_graph()
 
 n_inputs = X_train.shape[1]
@@ -101,6 +102,7 @@ with tf.Session() as sess:
         logits = sess.run(z2, feed_dict={X: X_test, y: y_test})
         test_accuracy = accuracy(logits, y_test)
         print 'Epoch: {} Test Accuracy: {}'.format(epoch, test_accuracy)
+    matt = sess.run(loss, feed_dict={X: X_train, y: y_train})
 
 
 # ------------------------------------------------------------------------------
@@ -144,6 +146,7 @@ with tf.name_scope("train"):
 batch_size = 256
 n_epochs = 20
 
+
 init = tf.global_variables_initializer()
 with tf.Session() as sess:
     init.run()
@@ -155,3 +158,8 @@ with tf.Session() as sess:
         logits_ = sess.run(logits, feed_dict={X: X_test, y: y_test})
         test_accuracy = accuracy(logits_, y_test)
         print 'Epoch: {} Test Accuracy: {}'.format(epoch, test_accuracy)
+
+
+yhat = logits_.argmax(1)
+np.savetxt('yhat.txt', yhat)
+np.savetxt('X.txt', X_test, delimiter=',')
