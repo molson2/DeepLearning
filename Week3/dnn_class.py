@@ -10,9 +10,11 @@ import tensorflow as tf
 class DNNClassifier(BaseEstimator, ClassifierMixin):
 
     def __init__(self, n_hidden_layers=5, n_neurons=100, optimizer_class=tf.train.AdamOptimizer,
-                 learning_rate=0.01, batch_size=20, activation=tf.nn.elu, initializer=he_init,
+                 learning_rate=0.01, batch_size=20, activation=tf.nn.elu, initializer=None,
                  batch_norm_momentum=None, dropout_rate=None, random_state=None):
         """Initialize the DNNClassifier by simply storing all the hyperparameters."""
+        if initializer is None:
+            initializer = tf.contrib.layers.variance_scaling_initializer()
         self.n_hidden_layers = n_hidden_layers
         self.n_neurons = n_neurons
         self.optimizer_class = optimizer_class
