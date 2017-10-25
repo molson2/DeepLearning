@@ -4,45 +4,41 @@ import numpy as np
 
 
 # ------------------------------------------------------------------------------
-#                        Example 1:
+#                               Example 1
 # ------------------------------------------------------------------------------
 
-
-def ts_1(n, y_minus_1=1, y_minus_2=1):
-    '''
-    y_k = y_{k-1} + cos(3*y_{k-2})
-    '''
-    y = np.zeros(n)
-    y[0], y[1] = y_minus_2, y_minus_1
-    for k in xrange(2, n):
-        y[k] = y[k - 1] + np.cos(3 * y[k - 2])
-    return y
-
-
-def ts_2(n):
+def ts(n):
     '''
     '''
-    scale = 0.1
+    scale = 0.01
     t = np.linspace(0, scale * n, n)
-    return np.cos(np.sqrt(t + 10) * 2 * np.pi)
+    return t * np.sin(t) / 3 + 2 * np.sin(t * 5)
 
-y = ts_2(3500)
+
+n_train = 1000
+n_test = 100
+y = ts(n_train + n_test)
 
 plt.plot(y)
-plt.plot(range(3000, 3500), y[3000:], 'r*')
+plt.plot(range(n_train, n_train + n_test), y[n_train:], 'r*')
 plt.show()
 
 np.random.seed(123)
 n_steps = 20
 y_train = (y - y.mean()) / y.std()
-lstm = lstm_models.LSTMRegressor(n_steps=n_steps, n_neurons=50, n_layers=1)
-lstm.fit(y_train[:3000], y_train[3000:],
-         n_epochs=100, eta=0.001, batch_size=256)
-y_forc_scaled = lstm.predict(y_train[3000 - n_steps:3000], 500)
+lstm = lstm_models.LSTMRegressor(n_steps=n_steps, n_neurons=20, n_layers=1)
+lstm.fit(y_train[:n_train], y_train[n_train:],
+         n_epochs=1000, eta=0.05, batch_size=256)
+y_forc_scaled = lstm.predict(y_train[n_train - n_steps:n_train], n_test)
 y_forc = y.std() * y_forc_scaled + y.mean()
 
+# 10 step ahead forecast
+k_ahead = 10
+np.c_[y_forc[:k_ahead], y[n_train:n_train + k_ahead]]
 
-k_ahead = 100
-plt.plot(y_forc[:k_ahead], 'r-')
-plt.plot(y[3000:3000 + k_ahead], 'b*')
+
+# generate a new sequence based on the old on
+y_forc_scaled = lstm.predict(np.random.randn(n_steps), 100)
+y_forc = y.std() * y_forc_scaled + y.mean()
+plt.plot(y_forc)
 plt.show()

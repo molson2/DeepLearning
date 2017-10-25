@@ -3,7 +3,9 @@ import random
 from time import sleep
 import re
 import urllib2
-url = 'https://www.azlyrics.com/t/taylorswift.html'
+#url = 'https://www.azlyrics.com/t/taylorswift.html'
+#url = 'https://www.azlyrics.com/k/keha.html'
+# throw in bieber
 
 # get list of songs
 html = urllib2.urlopen(url).read()
@@ -18,7 +20,9 @@ for link in links:
         continue
 
 # get lyrics
-base_url = 'https://www.azlyrics.com/lyrics/taylorswift/'
+#base_url = 'https://www.azlyrics.com/lyrics/taylorswift/'
+#base_url = 'https://www.azlyrics.com/lyrics/keha/'
+
 lyrics = {}
 exceptions = []
 for song in songs:
@@ -30,11 +34,11 @@ for song in songs:
     except:
         exceptions.append(song)
         print 'Bad song: ' + song
-    sleep(20 * random.random())
+    sleep(10 * random.random())
 
 
 # write to disk
-with open('swift.csv', 'w') as f:
+with open('kesha.csv', 'w') as f:
     for key in lyrics.keys():
         f.write('##' + key.upper() + '##')
         f.write(lyrics[key].encode('utf-8'))

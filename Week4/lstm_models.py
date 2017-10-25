@@ -88,17 +88,15 @@ class LSTMRegressor(object):
         assert len(x0) == self.n_steps
         if not self.is_trained:
             raise ValueError('Model is not yet trained!')
-        x_test = x0.copy()
-        yhat = np.zeros(n_forc)
+        x = x0.copy()
         saver = tf.train.Saver()
         with tf.Session() as sess:
             saver.restore(sess, self.save_path)
-            for i in xrange(n_forc):
-                x_feed = x_test.reshape(-1, self.n_steps, 1)
-                yhat[i] = sess.run(self._outputs, feed_dict={
-                    self._X: x_feed})[0, -1, 0]
-                x_test = np.append(x_test[1:], yhat[i])
-        return yhat
+            for forc in range(n_forc):
+                X_batch = x[-self.n_steps:].reshape(1, self.n_steps, 1)
+                y_pred = sess.run(self._outputs, feed_dict={self._X: X_batch})
+                x = np.append(x, y_pred[0, -1, 0])
+        return x[self.n_steps:]
 
 
 # ------------------------------------------------------------------------------
@@ -128,6 +126,17 @@ class LSTMLyrics(object):
 
     def _softmax(self, x):
         return np.exp(x) / sum(np.exp(x))
+
+    def _char_to_batch(self, ch):
+        '''
+        Returns one-hot encoded batch from string x
+        @param cg is a string
+        '''
+        ix = [self.char_to_ix[x] for x in ch]
+        X_batch = np.zeros((1, self.n_steps, self.vocab_size))
+        for i in range(len(ix)):
+            X_batch[0, i, ix[i]] = 1
+        return X_batch
 
     def next_batch(self, batch_size):
         '''
@@ -203,25 +212,23 @@ class LSTMLyrics(object):
                     print 'Batch loss: %f' % batch_loss
                     print '-' * 50
                     print self.sample(nchar, sess)
-
-            saver.save(sess, self.save_path)
-            self.is_trained = True
+                print '-' * 50
+                print 'Epoch: %d' % epoch
+                saver.save(sess, self.save_path)
+                self.is_trained = True
+                print '-' * 50
 
     def sample(self, nchar, sess, x0=None):
         if x0 is None:
             x0 = np.random.choice(self.vocab, p=self._freq)
-        x_feed = np.zeros((1, self.n_steps, self.vocab_size))
-        x_feed[0][0][self.char_to_ix[x0]] = 1
-        sentence = [x0]
+        sentence = [x0] * self.n_steps
+
         for k in xrange(nchar - 1):
-            logits_ = sess.run(self._logits, feed_dict={self._X: x_feed})
-            logits_next = logits_[0][min(k, self.n_steps - 1)]
+            X_batch = self._char_to_batch(''.join(sentence[-self.n_steps:]))
+            logits_ = sess.run(self._logits, feed_dict={self._X: X_batch})
+            logits_next = logits_[0][-1]
             phat_next = self._softmax(logits_next)
             char_next = np.random.choice(self.vocab, p=phat_next)
             sentence.append(char_next)
-            if k < self.n_steps:
-                x_feed[0][k][self.char_to_ix[char_next]]
-            else:
-                x_feed[0][:-1] = x_feed[0][1:]
-                x_feed[0][-1][self.char_to_ix[char_next]] = 1
-        return ''.join(sentence)
+
+        return ''.join(sentence[self.n_steps - 1:])
