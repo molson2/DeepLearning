@@ -1,3 +1,8 @@
+# ------------------------------------------------------------------------------
+#                          Get lyrics from web
+# ------------------------------------------------------------------------------
+
+
 from bs4 import BeautifulSoup
 import random
 from time import sleep
@@ -5,7 +10,7 @@ import re
 import urllib2
 #url = 'https://www.azlyrics.com/t/taylorswift.html'
 #url = 'https://www.azlyrics.com/k/keha.html'
-# throw in bieber
+url = 'https://www.azlyrics.com/k/katyperry.html'
 
 # get list of songs
 html = urllib2.urlopen(url).read()
@@ -22,6 +27,7 @@ for link in links:
 # get lyrics
 #base_url = 'https://www.azlyrics.com/lyrics/taylorswift/'
 #base_url = 'https://www.azlyrics.com/lyrics/keha/'
+base_url = 'https://www.azlyrics.com/lyrics/katyperry/'
 
 lyrics = {}
 exceptions = []
@@ -34,11 +40,11 @@ for song in songs:
     except:
         exceptions.append(song)
         print 'Bad song: ' + song
-    sleep(10 * random.random())
+    sleep(20 * random.random())
 
 
 # write to disk
-with open('kesha.csv', 'w') as f:
+with open('perry.csv', 'w') as f:
     for key in lyrics.keys():
         f.write('##' + key.upper() + '##')
         f.write(lyrics[key].encode('utf-8'))

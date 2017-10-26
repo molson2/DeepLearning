@@ -80,7 +80,7 @@ class LSTMRegressor(object):
             saver.save(sess, self.save_path)
             self.is_trained = True
 
-    def predict(self, x0, n_forc):
+    def predict(self, x0, n_forc, sess=None):
         '''
         starting at x0, predict n_steps forward
         @param x0 vector of last self.n_steps data points !!!
@@ -89,14 +89,22 @@ class LSTMRegressor(object):
         if not self.is_trained:
             raise ValueError('Model is not yet trained!')
         x = x0.copy()
-        saver = tf.train.Saver()
-        with tf.Session() as sess:
-            saver.restore(sess, self.save_path)
+        if sess is None:
+            saver = tf.train.Saver()
+            with tf.Session() as sess:
+                saver.restore(sess, self.save_path)
+                for forc in range(n_forc):
+                    X_batch = x[-self.n_steps:].reshape(1, self.n_steps, 1)
+                    y_pred = sess.run(self._outputs, feed_dict={
+                                      self._X: X_batch})
+                    x = np.append(x, y_pred[0, -1, 0])
+            return x[self.n_steps:]
+        else:
             for forc in range(n_forc):
                 X_batch = x[-self.n_steps:].reshape(1, self.n_steps, 1)
                 y_pred = sess.run(self._outputs, feed_dict={self._X: X_batch})
                 x = np.append(x, y_pred[0, -1, 0])
-        return x[self.n_steps:]
+            return x[self.n_steps:]
 
 
 # ------------------------------------------------------------------------------
@@ -199,7 +207,8 @@ class LSTMLyrics(object):
         self._X, self._y, self._logits = X, y, logits
         self._startix, self._endix = 0, self.n_steps + 1
 
-        n_batches = self.n // batch_size
+        n_batches = self.n // (batch_size * self.n_steps)
+        print 'Number of batches: % d' % n_batches
         with tf.Session() as sess:
             init.run()
             for epoch in xrange(n_epochs):
