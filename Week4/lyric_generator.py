@@ -36,4 +36,4 @@ lyric_gen.fit(n_epochs=100, batch_size=128, eta=0.01, nchar=200)
 saver = tf.train.Saver()
 with tf.Session() as sess:
     saver.restore(sess, lyric_gen.save_path)
-    sample_lyrics = lyric_gen.sample(1000, sess)
+    sample_lyrics = lyric_gen.sample(10000, sess)

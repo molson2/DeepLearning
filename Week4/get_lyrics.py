@@ -10,7 +10,7 @@ import re
 import urllib2
 #url = 'https://www.azlyrics.com/t/taylorswift.html'
 #url = 'https://www.azlyrics.com/k/keha.html'
-url = 'https://www.azlyrics.com/k/katyperry.html'
+url = 'https://www.azlyrics.com/d/dylan.html'
 
 # get list of songs
 html = urllib2.urlopen(url).read()
@@ -27,7 +27,8 @@ for link in links:
 # get lyrics
 #base_url = 'https://www.azlyrics.com/lyrics/taylorswift/'
 #base_url = 'https://www.azlyrics.com/lyrics/keha/'
-base_url = 'https://www.azlyrics.com/lyrics/katyperry/'
+#base_url = 'https://www.azlyrics.com/lyrics/katyperry/'
+base_url = 'https://www.azlyrics.com/lyrics/bobdylan/'
 
 lyrics = {}
 exceptions = []
@@ -44,7 +45,7 @@ for song in songs:
 
 
 # write to disk
-with open('perry.csv', 'w') as f:
+with open('dylan.csv', 'w') as f:
     for key in lyrics.keys():
         f.write('##' + key.upper() + '##')
         f.write(lyrics[key].encode('utf-8'))

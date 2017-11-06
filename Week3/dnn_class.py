@@ -5,17 +5,20 @@
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.exceptions import NotFittedError
 import tensorflow as tf
+import numpy as np
 
 
 class DNNClassifier(BaseEstimator, ClassifierMixin):
 
-    def __init__(self, n_hidden_layers=5, n_neurons=100, optimizer_class=tf.train.AdamOptimizer,
+    def __init__(self, n_hidden_layers=5, n_neurons=100, n_epochs=100,
+                 optimizer_class=tf.train.AdamOptimizer,
                  learning_rate=0.01, batch_size=20, activation=tf.nn.elu, initializer=None,
                  batch_norm_momentum=None, dropout_rate=None, random_state=None):
         """Initialize the DNNClassifier by simply storing all the hyperparameters."""
         if initializer is None:
             initializer = tf.contrib.layers.variance_scaling_initializer()
         self.n_hidden_layers = n_hidden_layers
+        self.n_epochs = n_epochs
         self.n_neurons = n_neurons
         self.optimizer_class = optimizer_class
         self.learning_rate = learning_rate
@@ -58,7 +61,7 @@ class DNNClassifier(BaseEstimator, ClassifierMixin):
             self._training = None
 
         dnn_outputs = self._dnn(X)
-
+        he_init = tf.contrib.layers.variance_scaling_initializer()
         logits = tf.layers.dense(
             dnn_outputs, n_outputs, kernel_initializer=he_init, name="logits")
         Y_proba = tf.nn.softmax(logits, name="Y_proba")
@@ -105,8 +108,9 @@ class DNNClassifier(BaseEstimator, ClassifierMixin):
             gvar_name] for gvar_name in gvar_names}
         self._session.run(assign_ops, feed_dict=feed_dict)
 
-    def fit(self, X, y, n_epochs=100, X_valid=None, y_valid=None):
+    def fit(self, X, y, X_valid=None, y_valid=None):
         """Fit the model to the training set. If X_valid and y_valid are provided, use early stopping."""
+        n_epochs = self.n_epochs
         self.close_session()
 
         # infer n_inputs and n_outputs from the training set.
