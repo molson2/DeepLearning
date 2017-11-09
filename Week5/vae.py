@@ -85,10 +85,10 @@ def autoencoder(X, n_input, n_hidden, n_latent):
 
 n_hidden = 500
 n_inputs = 28 * 28
-n_latent = 2
+n_latent = 50
 
-n_epochs = 100
-batch_size = 256
+n_epochs = 500
+batch_size = 128
 learning_rate = 0.001
 
 utility.reset_graph()
@@ -113,7 +113,7 @@ with tf.Session() as sess:
                                                    feed_dict={X: images})
         print("Epoch %d: L_tot %03.2f L_likelihood %03.2f L_divergence %03.2f" % (
             epoch, loss_total, loss_lhood, loss_kl))
-        saver.save(sess, 'fashion_vae_2.ckpt')
+        saver.save(sess, 'fashion_vae_50.ckpt')
 
 # ------------------------------------------------------------------------------
 #                           Show Distribution of Labelled Data
@@ -143,9 +143,22 @@ plt.show()
 n_images = 20
 saver = tf.train.Saver()
 with tf.Session() as sess:
-    saver.restore(sess, 'fashion_vae_2.ckpt')
-    img = sess.run(p, feed_dict={z: np.random.randn(20, 2)})
+    init.run()
+    saver.restore(sess, 'fashion_vae_50.ckpt')
+    img = sess.run(p, feed_dict={z: np.random.randn(20, 50)})
 
 utility.plot_multiple_images(img.reshape(-1, 28, 28), 4, 5)
 plt.savefig('random_images.png', format='png', dpi=300)
 plt.show()
+
+# ------------------------------------------------------------------------------
+#                        JUNK
+# ------------------------------------------------------------------------------
+
+from sklearn.preprocessing import StandardScaler
+
+sc = StandardScaler()
+sc.fit(images)
+images_ = sc.fit_transform(images)
+
+u, d, v = np.linalg.svd(images_)

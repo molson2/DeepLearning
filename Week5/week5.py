@@ -2,15 +2,14 @@ import tensorflow as tf
 import numpy as np
 import utility
 import mpl_toolkits.mplot3d.axes3d as p3
+import matplotlib.pyplot as plt
 
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 import sys
 # ------------------------------------------------------------------------------
-#                           PCA 2d: Example 1
+#                           PCA Example
 # ------------------------------------------------------------------------------
-
-np.random.seed(123)
 
 
 def random_rotation(d):
@@ -63,8 +62,8 @@ def autoencoder2d(X_data, eta=0.01, n_epochs=1000, activation=None):
         comps = sess.run(hidden2, feed_dict={X: X_trans})
     return comps
 
-
-n = 500
+np.random.seed(123)
+n = 1000
 d = 3
 X = np.c_[np.random.random((n, 2)), np.zeros((n, d - 2))]
 Q = random_rotation(d)
@@ -82,37 +81,7 @@ plt.plot(U[:, 0], U[:, 1], 'bo')
 plt.show()
 
 # do 'autoencoder' #
-utility.reset_graph()
-U = autoencoder2d(X_data, n_epochs=100)
+utility.reset_graph(123)
+U = autoencoder2d(X_data, n_epochs=100, activation=None)
 plt.plot(U[:, 0], U[:, 1], 'bo')
-plt.show()
-
-# ------------------------------------------------------------------------------
-#                           PCA 2d: Example 2
-# ------------------------------------------------------------------------------
-
-from sklearn.datasets import make_swiss_roll
-
-n = 1000
-X_data, t = make_swiss_roll(n)
-
-ix_red = t > 8
-ix_blue = t < 8
-fig = plt.figure()
-ax = p3.Axes3D(fig)
-ax.scatter3D(X_data[ix_red, 0], X_data[ix_red, 1], X_data[ix_red, 2], 'ro')
-ax.scatter3D(X_data[ix_blue, 0], X_data[ix_blue, 1], X_data[ix_blue, 2], 'bo')
-plt.show()
-
-# do pca #
-U = pca(X_data)
-plt.plot(U[ix_red, 0], U[ix_red, 1], 'ro')
-plt.plot(U[ix_blue, 0], U[ix_blue, 1], 'bo')
-plt.show()
-
-# do autoencoder #
-utility.reset_graph()
-U = autoencoder2d(X_data, eta=0.001, n_epochs=5000, activation=None)
-plt.plot(U[ix_red, 0], U[ix_red, 1], 'ro')
-plt.plot(U[ix_blue, 0], U[ix_blue, 1], 'bo')
 plt.show()
