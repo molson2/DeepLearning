@@ -57,3 +57,13 @@ def plot_multiple_images(images, n_rows, n_cols, pad=2):
                   (x * (w + pad) + pad):(x * (w + pad) + pad + w)] = images[y * n_cols + x]
     plt.imshow(image, cmap="Greys", interpolation="bessel")
     plt.axis("off")
+
+
+def plot_image(image):
+    plt.imshow(image, cmap="gray", interpolation="nearest")
+    plt.axis("off")
+
+
+def plot_color_image(image):
+    plt.imshow(image.astype(np.uint8), interpolation="nearest")
+    plt.axis("off")

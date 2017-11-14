@@ -156,9 +156,21 @@ plt.show()
 # ------------------------------------------------------------------------------
 
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 
 sc = StandardScaler()
 sc.fit(images)
 images_ = sc.fit_transform(images)
+pca = PCA(n_components=2)
+pca.fit(images_)
 
-u, d, v = np.linalg.svd(images_)
+ix = np.random.permutation(len(images))[:3000]
+U = pca.fit_transform(images_)
+U = U[ix]
+
+labels_set = list(set(labels[ix]))
+for i in xrange(len(labels_set)):
+    clothing_ix = labels[ix] == labels_set[i]
+    plt.scatter(U[clothing_ix, 0], U[clothing_ix, 1], alpha=0.9)
+plt.savefig('pca_images.png', format='png', dpi=300)
+plt.show()
