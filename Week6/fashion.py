@@ -108,7 +108,7 @@ X_test, y_test = utility.read_fashion(range(10), 'training', d_path)
 # ------------------------------------------------------------------------------
 
 n_epochs = 50
-batch_size = 100
+batch_size = 64
 
 with tf.Session() as sess:
     init.run()
@@ -122,6 +122,30 @@ with tf.Session() as sess:
         acc_test = accuracy.eval(feed_dict={X: X_test, y: y_test})
         print(epoch, "Train accuracy:", acc_train, "Test accuracy:", acc_test)
         save_path = saver.save(sess, "./fashion_model")
+
+# ------------------------------------------------------------------------------
+#                             Look at Filters, etc.
+# ------------------------------------------------------------------------------
+
+ix = 111
+img = X_train[ix].reshape((28, 28))
+plt.imshow(img, cmap='gray', interpolation='bessel')
+plt.savefig('shoe.png', format='png')
+plt.show()
+
+with tf.Session() as sess:
+    saver.restore(sess, 'fashion_model')
+    # get kernel weights
+    conv_kernels_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)[0]
+    conv_kernels = sess.run(conv_kernels_vars)
+    # run image through first layer convs
+    conv_img = sess.run(conv1, feed_dict={X: img.reshape((1, -1))})
+
+utility.plot_multiple_images(np.squeeze(conv_img).transpose((2, 0, 1)), 4, 8)
+plt.tight_layout()
+plt.savefig('shoe_features.png', format='png')
+plt.show()
+
 
 # ------------------------------------------------------------------------------
 #                             Compare to RF
@@ -139,7 +163,3 @@ print rf.predict(X_test[ix].reshape((1, -1)))
 print y_test[ix]
 plt.imshow(X_test[ix].reshape(28, 28), cmap='gray', interpolation='bessel')
 plt.show()
-
-# ------------------------------------------------------------------------------
-#                             Look at Filters, etc.
-# ------------------------------------------------------------------------------
