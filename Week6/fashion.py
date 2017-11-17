@@ -90,7 +90,7 @@ with tf.name_scope('init_and_save'):
 
 d_path = '/Users/matthewolson/Documents/Data/Fashion/'
 X_train, y_train = utility.read_fashion(range(10), 'training', d_path)
-X_test, y_test = utility.read_fashion(range(10), 'training', d_path)
+X_test, y_test = utility.read_fashion(range(10), 'testing', d_path)
 
 # 0 T-shirt/top
 # 1 Trouser
@@ -151,7 +151,6 @@ plt.show()
 #                             Compare to RF
 # ------------------------------------------------------------------------------
 
-# (huh, smokes it!)
 from sklearn.ensemble import RandomForestClassifier
 rf = RandomForestClassifier(n_estimators=100, max_depth=100, verbose=3)
 rf.fit(X_train, y_train)
