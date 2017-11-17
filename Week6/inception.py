@@ -121,8 +121,8 @@ with tf.name_scope("eval"):
     accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
 
 ## Train the model ##
-epochs = 30
-batch_size = 1
+epochs = 10
+batch_size = 4
 
 acc = []
 init = tf.global_variables_initializer()
@@ -150,5 +150,4 @@ with tf.Session() as sess:
     test_pred = sess.run(yhat, feed_dict={X: X_test})
 
 
-plt.imshow(X_test[3])
-plt.show()
+##
