@@ -3,12 +3,15 @@ import re
 import urllib
 from bs4 import BeautifulSoup
 import time
+import glob
+import os
+import numpy as np
 
 
-def downsample_image(name):
-    im = Image.open(name + '.jpg')
+def downsample_image(path, out_dir):
+    im = Image.open(path)
     im_small = im.resize((299, 299))
-    im_small.save(name + '_small.jpg')
+    im_small.save(out_dir + path)
 
 
 def get_images(html_path, base_name):
@@ -26,7 +29,15 @@ def get_images(html_path, base_name):
             i += 1
         except:
             print 'bad img'
+    return i
 
 
-html_path = 'nike.html'
-base_name = 'nike'
+# download jpgs'
+get_images('nike.html', 'nike')
+get_images('addidas.html', 'addidas')
+
+# downsample #
+all_jpgs = glob.glob('*.jpg')
+all_jpgs = [jpg for jpg in all_jpgs if os.path.getsize(jpg) > 2000]
+for jpg in all_jpgs:
+    downsample_image(jpg, '../shoes_processed/')
