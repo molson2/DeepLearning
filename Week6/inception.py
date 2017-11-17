@@ -121,9 +121,10 @@ with tf.name_scope("eval"):
     accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
 
 ## Train the model ##
-epochs = 50
+epochs = 30
 batch_size = 4
 
+acc = []
 init = tf.global_variables_initializer()
 with tf.Session() as sess:
     init.run()
@@ -140,8 +141,14 @@ with tf.Session() as sess:
                                              y: y_train[fold]})
             print '\t Iter: %d' % k
             k += 1
-        test_acc = accuracy.eval(feed_dict={X: X_test, y: y_test})
+        test_ix = np.random.permutation(len(y_test))[:100]
+        test_acc = accuracy.eval(feed_dict={X: X_test[ix], y: y_test[ix]})
+        acc.append(test_acc)
         print 'Epoch: %d Test Accuracy: %f' % (epoch, test_acc)
 
     # create test predictions
-    test_pred = sess.run(yhat, feed_dict={X: X_test, y: y_test})
+    test_pred = sess.run(yhat, feed_dict={X: X_test})
+
+
+plt.imshow(X_test[3])
+plt.show()
