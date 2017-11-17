@@ -122,7 +122,7 @@ with tf.name_scope("eval"):
 
 ## Train the model ##
 epochs = 30
-batch_size = 4
+batch_size = 1
 
 acc = []
 init = tf.global_variables_initializer()
@@ -141,7 +141,7 @@ with tf.Session() as sess:
                                              y: y_train[fold]})
             print '\t Iter: %d' % k
             k += 1
-        test_ix = np.random.permutation(len(y_test))[:100]
+        ix = np.random.permutation(len(y_test))[:50]
         test_acc = accuracy.eval(feed_dict={X: X_test[ix], y: y_test[ix]})
         acc.append(test_acc)
         print 'Epoch: %d Test Accuracy: %f' % (epoch, test_acc)
