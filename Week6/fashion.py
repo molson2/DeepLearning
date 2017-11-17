@@ -48,7 +48,7 @@ conv1 = tf.layers.conv2d(X_reshaped, filters=conv1_fmaps,
                          activation=tf.nn.relu,
                          name='conv1')
 
-conv2 = tf.layers.conv2d(X_reshaped, filters=conv2_fmaps,
+conv2 = tf.layers.conv2d(conv1, filters=conv2_fmaps,
                          kernel_size=conv2_ksize,
                          strides=conv2_stride,
                          padding=conv2_pad,
@@ -108,7 +108,7 @@ X_test, y_test = utility.read_fashion(range(10), 'testing', d_path)
 # ------------------------------------------------------------------------------
 
 n_epochs = 50
-batch_size = 64
+batch_size = 8
 
 with tf.Session() as sess:
     init.run()
