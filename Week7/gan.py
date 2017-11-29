@@ -1,119 +1,119 @@
 import tensorflow as tf
+from tensorflow.examples.tutorials.mnist import input_data
 import numpy as np
-from sklearn.model_selection import KFold
-import sys
-sys.path.append('../Week5/')
-import utility
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+import os
+
 
 # ------------------------------------------------------------------------------
-#                              Load in Data
+#                            Helper Funcs
+# ------------------------------------------------------------------------------
+def plot(samples):
+    fig = plt.figure(figsize=(4, 4))
+    gs = gridspec.GridSpec(4, 4)
+    gs.update(wspace=0.05, hspace=0.05)
+
+    for i, sample in enumerate(samples):
+        ax = plt.subplot(gs[i])
+        plt.axis('off')
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        ax.set_aspect('equal')
+        plt.imshow(sample.reshape(28, 28), cmap='Greys_r')
+
+    return fig
+
+
+def sample(n, z_dim):
+    return np.random.uniform(-1., 1., (n, z_dim))
+
+# ------------------------------------------------------------------------------
+#                            Load Data
 # ------------------------------------------------------------------------------
 
-d_path = '/Users/matthewolson/Documents/Data/Fashion/'
-X_data, y_data = utility.read_fashion(range(10), 'training', d_path)
-
-# reshape X_data into (60000, 28, 28, 1)
+mnist = input_data.read_data_sets('../../../Data/MNIST/', one_hot=True)
 
 # ------------------------------------------------------------------------------
-#                                Setup
+#                            Build the GAN
 # ------------------------------------------------------------------------------
 
-n_latent = 50
-n_hidden_g1 = 128
-n_hidden_g2 = 128
-n_conv_d = 16
+n_hidden_g = 128
 n_hidden_d = 128
-n_input = 28
+n_latent = 100
+im_width = 28
+
+xavier_init = tf.contrib.layers.xavier_initializer()
+
+
+def D(X, reuse=None):
+    with tf.variable_scope('D', reuse=reuse):
+        h1 = tf.layers.dense(X, n_hidden_d, activation=tf.nn.relu,
+                             kernel_initializer=xavier_init)
+        prob = tf.layers.dense(h1, im_width * im_width, activation=tf.nn.sigmoid,
+                               kernel_initializer=xavier_init)
+    return prob
 
 
 def G(z):
-    '''
-    Takes in latent z and outputs 28x28 probability image
-    '''
     with tf.variable_scope('G'):
-        he_init = tf.contrib.layers.variance_scaling_initializer()
-        hidden1 = tf.layers.dense(z, n_hidden_g1,
-                                  kernel_initializer=he_init,
-                                  activation=tf.nn.relu)
-        hidden2 = tf.layers.dense(hidden1, n_hidden_g2,
-                                  kernel_initializer=he_init,
-                                  activation=tf.nn.relu)
-        im_prob = tf.layers.dense(hidden2, n_input * n_input,
-                                  kernel_initializer=he_init,
-                                  activation=tf.nn.sigmoid)
-        im_prob = tf.reshape(im_prob, shape=(-1, n_input, n_input, 1))
-    return im_prob
+        h1 = tf.layers.dense(z, n_hidden_g, activation=tf.nn.relu,
+                             kernel_initializer=xavier_init)
+        prob = tf.layers.dense(h1, im_width * im_width, activation=tf.nn.sigmoid,
+                               kernel_initializer=xavier_init)
+    return prob
 
-
-def D(x, reuse=None):
-    '''
-    Takes in (batch_size, 28, 28, 1) set of images, outputs prob
-    '''
-    with tf.variable_scope('D', reuse=reuse):
-        he_init = tf.contrib.layers.variance_scaling_initializer()
-        conv = tf.layers.conv2d(X, filters=n_conv_d,
-                                kernel_size=3, strides=2,
-                                padding='SAME',
-                                activation=tf.nn.relu)
-        pool = tf.nn.max_pool(conv, ksize=[1, 2, 2, 1],
-                              strides=[1, 2, 2, 1], padding='VALID')
-        pool_flat = tf.reshape(pool, shape=(-1, n_conv_d * 7 * 7))
-        hidden = tf.layers.dense(pool_flat, n_hidden_d, activation=tf.nn.relu)
-        logits = tf.layers.dense(hidden, 2)
-        y_prob = tf.nn.softmax(logits)
-    return y_prob
-
-
-X = tf.placeholder(tf.float32, shape=(None, n_input, n_input, 1))
+tf.reset_default_graph()
+X = tf.placeholder(tf.float32, shape=(None, im_width * im_width))
 z = tf.placeholder(tf.float32, shape=(None, n_latent))
 
 sample_g = G(z)
-prob_real = D(X)
-prob_fake = D(sample_g, reuse=True)
+p_real = D(X)
+p_fake = D(sample_g, reuse=True)
 
-loss_d = -tf.reduce_mean(tf.log(prob_real) + tf.log(1. - prob_fake))
-loss_g = -tf.reduce_mean(tf.log(prob_fake))
+loss_d = -tf.reduce_mean(tf.log(p_real) + tf.log(1. - p_fake))
+loss_g = -tf.reduce_mean(tf.log(p_fake))
+
+# ------------------------------------------------------------------------------
+#                            Train the GAN
+# ------------------------------------------------------------------------------
+
+eta = 0.001
+batch_size = 128
 
 d_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='D')
 g_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='G')
 
-training_op_d = tf.train.AdamOptimizer(0.001).minimize(loss_d, var_list=d_vars)
-training_op_g = tf.train.AdamOptimizer(0.001).minimize(loss_g, var_list=g_vars)
+train_d = tf.train.AdamOptimizer(eta).minimize(loss_d, var_list=d_vars)
+train_g = tf.train.AdamOptimizer(eta).minimize(loss_g, var_list=g_vars)
 
+sess = tf.Session()
+sess.run(tf.global_variables_initializer())
 
-# ------------------------------------------------------------------------------
-#                                 Train GAN
-# ------------------------------------------------------------------------------
+if not os.path.exists('out/'):
+    os.makedirs('out/')
 
-n_epochs = 100
-batch_size = 128
-n_samps = 16
+fig_num = 0
 
-init = tf.global_variables_initializer()
-saver = tf.train.Saver()
-with tf.Session() as sess:
-    init.run()
+for it in xrange(int(1e5)):
+    if it % 1000 == 0:
+        im_samps = sess.run(sample_g, feed_dict={z: sample(16, n_latent)})
 
-    for epoch in xrange(n_epochs):
-        kf = KFold(n_splits=len(images) // batch_size, shuffle=True)
-        batches = kf.split(images)
-        for _, batch in batches:
+        fig = plot(im_samps)
+        plt.savefig('out/{}.png'.format(str(fig_num).zfill(3)),
+                    bbox_inches='tight')
+        fig_num += 1
+        plt.close(fig)
 
-            batch_len = len(batch)
+    X_batch, _ = mnist.train.next_batch(batch_size)
 
-            ## update D ##
-            Z_sample = np.random.random((batch_len, n_latent))
-            _, loss_d_ = sess.run([training_op_d, loss_d],
-                                  feed_dict={X: X[batch], z: z_sample})
+    _, loss_d_ = sess.run([train_d, loss_d],
+                          feed_dict={X: X_batch, z: sample(batch_size, n_latent)})
+    _, loss_g_ = sess.run([train_g, loss_g],
+                          feed_dict={z: sample(batch_size, n_latent)})
 
-            ## update G ##
-            Z_sample = np.random.random((batch_len, n_latent))
-
-            _, loss_g_ = sess.run([training_op_g, loss_g],
-                                  feed_dict={z: z_sample})
-        print 'Epoch: %d loss_d: %f  loss_g: %f' % (epoch, loss_d_, loss_g_)
-        save_path = saver.save(sess, 'fashion_gan.ckpt')
-
-        # sample some images
-        z_sample = np.random.random((n_samps, n_latent))
-        samp_ims = sess.run(prob_fake, feed_dict={z: z_sample})
+    if it % 1000 == 0:
+        print('Iter: {}'.format(it))
+        print('D loss: {:.4}'. format(loss_d_))
+        print('G_loss: {:.4}'.format(loss_g_))
+        print()
