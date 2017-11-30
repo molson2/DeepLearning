@@ -6,12 +6,14 @@ import matplotlib.gridspec as gridspec
 import os
 
 
-n_hidden_g = 128
-n_hidden_d = 128
-n_latent = 100
+n_hidden_g = 100
+n_hidden_d = 100
+n_latent = 75
 im_width = 28
 
-eta = 0.001
+eta_d = 0.001
+eta_g = 0.001
+batch_size = 128
 
 outdir = 'big/'
 
@@ -61,7 +63,7 @@ xavier_init = tf.contrib.layers.xavier_initializer()
 
 def D(X, reuse=None):
     with tf.variable_scope('D', reuse=reuse):
-        h1 = tf.layers.dense(X, n_hidden_d, activation=tf.nn.relu,
+        h1 = tf.layers.dense(X, n_hidden_d, activation=tf.nn.elu,
                              kernel_initializer=xavier_init)
         logit = tf.layers.dense(h1, im_width * im_width,
                                 kernel_initializer=xavier_init)
@@ -71,9 +73,11 @@ def D(X, reuse=None):
 
 def G(z):
     with tf.variable_scope('G'):
-        h1 = tf.layers.dense(z, n_hidden_g, activation=tf.nn.relu,
+        h1 = tf.layers.dense(z, n_hidden_g, activation=tf.nn.elu,
                              kernel_initializer=xavier_init)
-        logit = tf.layers.dense(h1, im_width * im_width,
+        h2 = tf.layers.dense(h1, n_hidden_g, activation=tf.nn.elu,
+                             kernel_initializer=xavier_init)
+        logit = tf.layers.dense(h2, im_width * im_width,
                                 kernel_initializer=xavier_init)
         prob = tf.nn.sigmoid(logit)
     return prob
@@ -106,8 +110,8 @@ loss_g = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
 d_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='D')
 g_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='G')
 
-train_d = tf.train.AdamOptimizer(eta).minimize(loss_d, var_list=d_vars)
-train_g = tf.train.AdamOptimizer(eta).minimize(loss_g, var_list=g_vars)
+train_d = tf.train.AdamOptimizer(eta_d).minimize(loss_d, var_list=d_vars)
+train_g = tf.train.AdamOptimizer(eta_g).minimize(loss_g, var_list=g_vars)
 
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
@@ -135,7 +139,4 @@ for it in xrange(int(1e5)):
                           feed_dict={z: sample(batch_size, n_latent)})
 
     if it % 1000 == 0:
-        print('Iter: {}'.format(it))
-        print('D loss: {:.4}'. format(loss_d_))
-        print('G_loss: {:.4}'.format(loss_g_))
-        print()
+        print 'Iter: {} loss_d: {:.4} loss_g: {:.4}'.format(it, loss_d_, loss_g_)
