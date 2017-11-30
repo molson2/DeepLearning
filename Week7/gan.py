@@ -6,9 +6,24 @@ import matplotlib.gridspec as gridspec
 import os
 
 
+n_hidden_g = 128
+n_hidden_d = 128
+n_latent = 100
+im_width = 28
+
+eta = 0.001
+
+outdir = 'big/'
+
+tf.reset_default_graph()
+tf.set_random_seed(123)
+np.random.seed(123)
+
 # ------------------------------------------------------------------------------
 #                            Helper Funcs
 # ------------------------------------------------------------------------------
+
+
 def plot(samples):
     fig = plt.figure(figsize=(4, 4))
     gs = gridspec.GridSpec(4, 4)
@@ -33,15 +48,13 @@ def sample(n, z_dim):
 # ------------------------------------------------------------------------------
 
 mnist = input_data.read_data_sets('../../../Data/MNIST/', one_hot=True)
+samp_ims, _ = mnist.train.next_batch(16)
+plot(samp_ims)
+plt.savefig('samp_mnist.png', bbox_inches='tight')
 
 # ------------------------------------------------------------------------------
 #                            Build the GAN
 # ------------------------------------------------------------------------------
-
-n_hidden_g = 128
-n_hidden_d = 128
-n_latent = 100
-im_width = 28
 
 xavier_init = tf.contrib.layers.xavier_initializer()
 
@@ -50,17 +63,19 @@ def D(X, reuse=None):
     with tf.variable_scope('D', reuse=reuse):
         h1 = tf.layers.dense(X, n_hidden_d, activation=tf.nn.relu,
                              kernel_initializer=xavier_init)
-        prob = tf.layers.dense(h1, im_width * im_width, activation=tf.nn.sigmoid,
-                               kernel_initializer=xavier_init)
-    return prob
+        logit = tf.layers.dense(h1, im_width * im_width,
+                                kernel_initializer=xavier_init)
+        prob = tf.nn.sigmoid(logit)
+    return prob, logit
 
 
 def G(z):
     with tf.variable_scope('G'):
         h1 = tf.layers.dense(z, n_hidden_g, activation=tf.nn.relu,
                              kernel_initializer=xavier_init)
-        prob = tf.layers.dense(h1, im_width * im_width, activation=tf.nn.sigmoid,
-                               kernel_initializer=xavier_init)
+        logit = tf.layers.dense(h1, im_width * im_width,
+                                kernel_initializer=xavier_init)
+        prob = tf.nn.sigmoid(logit)
     return prob
 
 tf.reset_default_graph()
@@ -68,18 +83,25 @@ X = tf.placeholder(tf.float32, shape=(None, im_width * im_width))
 z = tf.placeholder(tf.float32, shape=(None, n_latent))
 
 sample_g = G(z)
-p_real = D(X)
-p_fake = D(sample_g, reuse=True)
+p_real, logit_real = D(X)
+p_fake, logit_fake = D(sample_g, reuse=True)
 
-loss_d = -tf.reduce_mean(tf.log(p_real) + tf.log(1. - p_fake))
-loss_g = -tf.reduce_mean(tf.log(p_fake))
+#loss_d = -tf.reduce_mean(tf.log(p_real) + tf.log(1. - p_fake))
+#loss_g = -tf.reduce_mean(tf.log(p_fake))
+
+loss_d = tf.reduce_mean(
+    tf.nn.sigmoid_cross_entropy_with_logits(
+        logits=logit_real, labels=tf.ones_like(logit_real)) +
+    tf.nn.sigmoid_cross_entropy_with_logits(
+        logits=logit_fake, labels=tf.zeros_like(logit_fake)))
+
+loss_g = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+    logits=logit_fake, labels=tf.ones_like(logit_fake)))
+
 
 # ------------------------------------------------------------------------------
 #                            Train the GAN
 # ------------------------------------------------------------------------------
-
-eta = 0.001
-batch_size = 128
 
 d_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='D')
 g_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='G')
@@ -90,8 +112,8 @@ train_g = tf.train.AdamOptimizer(eta).minimize(loss_g, var_list=g_vars)
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
-if not os.path.exists('out/'):
-    os.makedirs('out/')
+if not os.path.exists(outdir):
+    os.makedirs(outdir)
 
 fig_num = 0
 
@@ -100,7 +122,7 @@ for it in xrange(int(1e5)):
         im_samps = sess.run(sample_g, feed_dict={z: sample(16, n_latent)})
 
         fig = plot(im_samps)
-        plt.savefig('out/{}.png'.format(str(fig_num).zfill(3)),
+        plt.savefig(outdir + '{}.png'.format(str(fig_num).zfill(3)),
                     bbox_inches='tight')
         fig_num += 1
         plt.close(fig)
