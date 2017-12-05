@@ -1,3 +1,5 @@
+from gensim import utils
+from gensim.models.doc2vec import LabeledSentence
 import string
 import numpy as np
 import pandas as pd
@@ -6,48 +8,9 @@ import glob
 from collections import defaultdict
 import re
 
-SOURCES = ['New York Times', 'Fox News', 'Reuters', 'National Review']
+SOURCES = ['New York Times', 'Fox News',
+           'Reuters', 'National Review', 'Atlantic']
 NEWS_PATH = '/Users/matthewolson/Documents/Data/News/'
-
-# ------------------------------------------------------------------------------
-#                               Read in News Sources
-# ------------------------------------------------------------------------------
-
-## read in raw ##
-paths = glob.glob(NEWS_PATH + '*.csv')
-
-source_raw = defaultdict(list)
-for path in paths:
-    df = pd.read_csv(path, header=0, encoding='utf-8')
-    for source in SOURCES:
-        source_raw[source].append(
-            df.query('publication == @source').content.values)
-
-
-## process ##
-for source in SOURCES:
-    source_raw[source] = np.concatenate(source_raw[source])
-    with open(source.replace(' ', '_') + '.txt', 'w') as f:
-        for article in source_raw[source]:
-            # kill unicode
-            article = article.encode('unicode_escape')
-            article = re.sub(r'(\\u[0-9A-Fa-f]+)', '', article)
-            # kill \x
-            article = re.sub(r'(\x[0-9A-Fa-f]+)', '', article)
-            # kill extra whitespace
-            article = re.sub('\s+', ' ', article)
-            # kill punctutation
-            article = re.sub('[' + string.punctuation + ']', '', article)
-            # remove references to publications
-            article = re.sub(source, '', article)
-            # make lower
-            article = article.lower()
-            # write
-            f.write(article + '\n')
-    print 'Done with %s' % source
-
-
-''
 
 # ------------------------------------------------------------------------------
 #                             Helper Class
@@ -90,7 +53,45 @@ class LabeledLineSentence(object):
         random.shuffle(shuffled)
         return shuffled
 
+# ------------------------------------------------------------------------------
+#                               Read in News Sources
+# ------------------------------------------------------------------------------
 
+if __name__ == '__main__':
+    ## read in raw ##
+    paths = glob.glob(NEWS_PATH + '*.csv')
+
+    source_raw = defaultdict(list)
+    for path in paths:
+        df = pd.read_csv(path, header=0, encoding='utf-8')
+        for source in SOURCES:
+            source_raw[source].append(
+                df.query('publication == @source').content.values)
+
+    ## process ##
+    for source in SOURCES:
+        source_raw[source] = np.concatenate(source_raw[source])
+        with open(source.replace(' ', '_') + '.txt', 'w') as f:
+            for article in source_raw[source]:
+                # kill unicode
+                article = article.encode('unicode_escape')
+                article = re.sub(r'(\\u[0-9A-Fa-f]+)', '', article)
+                # kill \x
+                article = re.sub(r'(\\x[0-9A-Fa-f]+)', '', article)
+                # kill extra whitespace
+                article = re.sub('\s+', ' ', article)
+                # kill punctutation
+                article = re.sub('[' + string.punctuation + ']', '', article)
+                # remove references to publications
+                article = re.sub(source, '', article)
+                # make lower
+                article = article.lower()
+                # write
+                f.write(article + '\n')
+        print 'Done with %s' % source
+
+
+''
 # ------------------------------------------------------------------------------
 #                                 Article Counts
 # ------------------------------------------------------------------------------
