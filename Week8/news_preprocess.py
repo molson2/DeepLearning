@@ -32,6 +32,8 @@ for source in SOURCES:
             # kill unicode
             article = article.encode('unicode_escape')
             article = re.sub(r'(\\u[0-9A-Fa-f]+)', '', article)
+            # kill \x
+            article = re.sub(r'(\x[0-9A-Fa-f]+)', '', article)
             # kill extra whitespace
             article = re.sub('\s+', ' ', article)
             # kill punctutation
@@ -88,7 +90,7 @@ class LabeledLineSentence(object):
         random.shuffle(shuffled)
         return shuffled
 
-''
+
 # ------------------------------------------------------------------------------
 #                                 Article Counts
 # ------------------------------------------------------------------------------
