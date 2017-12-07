@@ -29,7 +29,7 @@ model.build_vocab(sentences.to_array())
 model.train(sentences.sentences_perm(),
             total_examples=model.corpus_count, epochs=N_EPOCHS)
 # model.save('news_doc2vec.mdl')
-#model = Doc2Vec.load(fname)
+model = Doc2Vec.load('news_doc2vec.mdl')
 # ------------------------------------------------------------------------------
 #                      Run Classifier on Doc Features
 # ------------------------------------------------------------------------------
@@ -74,6 +74,7 @@ glm.score(X_test, y_test)
 y_pred = glm.predict(X_test)
 
 confusion_matrix(y_test, y_pred)
+
 
 ## fit classifier subset ##
 subset = [0, 2]  # Fox and NYT
