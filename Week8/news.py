@@ -4,7 +4,9 @@ import random
 import glob
 from news_preprocess import LabeledLineSentence
 
-n_epochs = 50
+N_EPOCHS = 50
+EMBED_DIM = 200
+
 # ------------------------------------------------------------------------------
 #                      Read in Articles (see news_preprocess.py)
 # ------------------------------------------------------------------------------
@@ -21,13 +23,13 @@ sentences = LabeledLineSentence(sources)
 #                          Train Doc2Vec
 # ------------------------------------------------------------------------------
 
-model = Doc2Vec(min_count=5, window=10, size=100,
+model = Doc2Vec(min_count=10, window=10, size=EMBED_DIM,
                 sample=1e-4, negative=5, workers=4)
 model.build_vocab(sentences.to_array())
 model.train(sentences.sentences_perm(),
-            total_examples=model.corpus_count, epochs=n_epochs)
-
-
+            total_examples=model.corpus_count, epochs=N_EPOCHS)
+# model.save('news_doc2vec.mdl')
+#model = Doc2Vec.load(fname)
 # ------------------------------------------------------------------------------
 #                      Run Classifier on Doc Features
 # ------------------------------------------------------------------------------
@@ -59,7 +61,7 @@ X_test = np.array(X_test)
 y_train = np.array(y_train)
 y_test = np.array(y_test)
 
-# sims = d2v_model.docvecs.most_similar(docvec)
+# model.docvecs.most_similar()
 
 ## fit classifier ##
 import glmnet
@@ -74,7 +76,7 @@ y_pred = glm.predict(X_test)
 confusion_matrix(y_test, y_pred)
 
 ## fit classifier subset ##
-subset = [1, 3]
+subset = [0, 2]  # Fox and NYT
 ix_train = np.isin(y_train, subset)
 ix_test = np.isin(y_test, subset)
 
@@ -84,27 +86,3 @@ glm.score(X_test[ix_test], y_test[ix_test])
 y_pred = glm.predict(X_test[ix_test])
 
 confusion_matrix(y_test[ix_test], y_pred)
-
-# ------------------------------------------------------------------------------
-#                              Visualize Space
-# ------------------------------------------------------------------------------
-
-import matplotlib.pyplot as plt
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
-import seaborn as sns
-import pandas as pd
-sns.set(style="ticks", color_codes=True)
-
-pca = PCA(n_components=2)
-x_scaled = StandardScaler().fit_transform(X_train)
-pca.fit(x_scaled)
-ix = np.random.choice(len(X_train), 700)
-pca_scores = pca.fit_transform(x_scaled[ix])
-
-plt_df = pd.DataFrame({'x1': pca_scores[:, 0],
-                       'x2': pca_scores[:, 1],
-                       'label': [sources.values()[k] for k in y_train[ix]]})
-g = sns.FacetGrid(plt_df, col='label', col_wrap=3)
-g = g.map(plt.scatter, 'x1', 'x2', edgecolor="w")
-plt.show()
