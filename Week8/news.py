@@ -66,7 +66,7 @@ y_test = np.array(y_test)
 ## fit classifier ##
 import glmnet
 from sklearn.metrics import confusion_matrix
-
+import pandas as pd
 
 glm = glmnet.LogitNet()
 glm.fit(X_train, y_train)
